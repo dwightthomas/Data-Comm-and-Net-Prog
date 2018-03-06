@@ -16,10 +16,10 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-
-
+	//This opens both input and output files for reading and writing respectively.
     input = fopen("Test.txt", "r");
     output = fopen("Output.txt", "w");
+    //This checks to ensure both file were opened properly
     if(input == NULL)
     {
         printf("The input file could not be opened\nGood bye!");
@@ -31,6 +31,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    //This is the while loop for reading the data.
     char* endline;
     while(endline != EOF)
     {
@@ -39,9 +40,11 @@ int main(int argc, char *argv[])
         fscanf(input, "%d", &type);
         //This prints the type to file (since right now all is type one just do it manually).
         fprintf(output, "00000001 ");
+
+        //This determines the types and what to do with it.
         if(type == 0)
         {
-            //Convert to type 2 and print to the screen
+            //Converts type 0 to type 1 and prints to the screen and writes to output file as well.
             long long number;
             int num = 0;
             fscanf(input, "%lld", &amt);
@@ -65,6 +68,7 @@ int main(int argc, char *argv[])
                 fprintf(output, "%d ", n);
             }
             int i;
+            //Loop through n numbers
             for(i=0; i<n; i++)
             {
                 fscanf(input, "%lld", &number);
@@ -87,18 +91,50 @@ int main(int argc, char *argv[])
             //printf("\nThis is end %c\n", endline);
             endline = fgetc(input);
         }
+        //This is taken if it is for type 1
         else
         {
-            long long number;
+            int number;
             char comma;
-            fscanf(input, "%lld", &number);
-            printf("This is the numberin bi: %lld\n", number);
-            fscanf(input, "%lld, %c", &number, &comma);
-            printf("This is the numberin bi: %lld\n", number);
-            fscanf(input, "%lld, %c", &number, &comma);
-            printf("This is the numberin bi2: %lld\n", number);
-            fscanf(input, "%lld, %c", &number, &comma);
-            printf("This is the numberin bi2: %lld\n", number);
+            fscanf(input, "%lld", &amt);
+            n = binaryToDecimal(amt);
+            if(n < 10)
+            {
+                //Print 2 zeros before it
+                printf("00%d ", n);
+                fprintf(output, "00%d ", n);
+            }
+            else if(n < 100)
+            {
+                //Print 1 zero before it.
+                printf("0%d ", n);
+                fprintf(output, "0%d ", n);
+            }
+            else
+            {
+                //Print it as normal
+                printf("%d ", n);
+                fprintf(output, "%d ", n);
+            }
+            int i;
+            for(i=0; i<n; i++)
+            {
+                if(i != n-1)
+                {
+                    fscanf(input, "%d%c", &number, &comma);
+                    printf("%d, ", number);
+                    fprintf(output, "%d, ", number);
+                }
+                else
+                {
+                    fscanf(input, "%d%c", &number, &comma);
+                    printf("%d", number);
+                    fprintf(output, "%d", number);
+                }
+            }
+            printf("\n");
+            fprintf(output, "\n");
+            endline = fgetc(input);
         }
     }
 
