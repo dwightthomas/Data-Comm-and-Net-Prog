@@ -8,7 +8,7 @@ int binaryToDecimal(long long n);
 int main(int argc, char *argv[])
 {
     FILE *input, *output;
-	argc = 3;
+	//argc = 3;
 	//Checks to make sure book input file location and output file location were pasted.
 	if (argc != 3)
 	{
@@ -17,8 +17,8 @@ int main(int argc, char *argv[])
 	}
 
 	//This opens both input and output files for reading and writing respectively.
-    input = fopen("Test.txt", "r");
-    output = fopen("Output.txt", "w");
+    input = fopen(argv[1], "r");
+    output = fopen(argv[2], "w");
     //This checks to ensure both file were opened properly
     if(input == NULL)
     {
@@ -85,10 +85,9 @@ int main(int argc, char *argv[])
                     fprintf(output, "%d ", num);
                 }
             }
+            //Use to move to next line an check for EOF
             printf("\n");
             fprintf(output, "\n");
-            //fscanf("%c", endline);
-            //printf("\nThis is end %c\n", endline);
             endline = fgetc(input);
         }
         //This is taken if it is for type 1
@@ -132,6 +131,7 @@ int main(int argc, char *argv[])
                     fprintf(output, "%d", number);
                 }
             }
+            //Use to move to next line an check for EOF
             printf("\n");
             fprintf(output, "\n");
             endline = fgetc(input);
