@@ -9,6 +9,9 @@
 #include <string.h>
 #include <stdint.h>
 
+// Helper functions
+
+int ascii_to_int(int num);
 
 
 // Global constants
@@ -122,15 +125,75 @@ int main(int argc, char *argv[])
 
         FILE *input, *output;
         input = fopen(input_path, "r");
+        output = fopen(output_path, "w+");
         if(input == NULL)
         {
             printf("The input file could not be opened\nGood bye!");
             return 0;
         }
+        if(output == NULL)
+        {
+            printf("The output file could not be opened\nGood bye!");
+            return 0;
+        }
 
-        int type = 0, n = 0;
+
+
+        //Handle the format
+
+        int maxline = 2000;
+        char line[2000];
+        if(format == 0)
+        {
+
+            //No translations so just reaad and write
+            while(1)
+            {
+                if(fgets(line, maxline, input) == NULL)
+                    break;
+                printf("The line is %s\n", line);
+                fprintf(output, "%s", line);
+            }
+        }
+        else if(format == 1)
+        {
+            //change 0 to 1
+            int type = 0;
+            fscanf(input, "%d", &type);
+            printf("The type is: %d\n", type);
+            if(type == 1)
+            {
+                fgets(line, maxline, input);
+                printf("The line: %s\n", line);
+                fprintf(output, "0000000%d%s", type, line);
+            }
+        }
+        /*case 2:
+            //1 change to 0
+            break;
+        case 3:
+            //Both 0 change t1 and 1 change to 0
+            break;
+        default:
+            break;
+        }*/
+
+        fclose(input);
+        fclose(output);
+
+        /*int type = 0, n = 0;
         fscanf(input, "%d", &type);
         printf("The typ is: %d\n", type);
+        int test;
+        fscanf(input, "%d", &test);
+        printf("tesst %d\n", test);
+        test = ascii_to_int(test);
+        fscanf(input, "%d", &test);
+        test = ascii_to_int(test);
+
+        printf("The amount is: %d\n", test);*/
+
+        //Put code in to check filres are in correct format
 
 
 
@@ -147,4 +210,19 @@ int main(int argc, char *argv[])
     }
 
     return 0;
+}
+
+int ascii_to_int(int num)
+{
+    int i = 1, sum = 0;
+    while(num != 0)
+    {
+        int temp = num%100;
+        temp = temp - 48;
+        printf("The temp is %d\n", temp);
+        sum = sum + (temp*i);
+        i = i*10;
+        num = num/100;
+    }
+    return sum;
 }
