@@ -8,7 +8,7 @@ int binaryToDecimal(long long n);
 int main(int argc, char *argv[])
 {
     FILE *input, *output;
-	//argc = 3;
+	argc = 3;
 	//Checks to make sure book input file location and output file location were pasted.
 	if (argc != 3)
 	{

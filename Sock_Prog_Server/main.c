@@ -8,10 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-
-// Helper functions
-
-int ascii_to_int(int num);
+#include <math.h>
 
 
 // Global constants
@@ -19,6 +16,24 @@ int ascii_to_int(int num);
 #define ECHO_PORT          (2002)
 #define MAX_LINE           (1000)
 #define LISTENQ        (1024)   /*  Backlog for listen()   */
+typedef int bool;
+#define true 1
+#define false 0
+FILE *input, *output;
+
+// Helper functions
+
+int ascii_to_int(int num);
+int binaryToDecimal(long long n);
+int int_to_ascii(int num);
+int amount_ascii(int n);
+long long decimalToBinary(int n);
+void print_binary_leading_zeros(long long n, bool isAmt);
+void type0_to_type1();
+void typee1_to_type0();
+int read_type();
+
+
 
 
 int main(int argc, char *argv[])
@@ -34,6 +49,7 @@ int main(int argc, char *argv[])
 
     char *input_path;
     char *output_path;
+    char *error_msg = "error";
     int format;
 
     // Get port number from the command line
@@ -119,11 +135,11 @@ int main(int argc, char *argv[])
         printf("The format is: %d\n", format);
         response = strtok(NULL, ",");
         output_path = response;
-        printf("The output is: %s\n", output_path);
+        printf("The output is: %s\n\n", output_path);
 
         //From here I have to check to seee if i can read from the file over the socket.
 
-        FILE *input, *output;
+
         input = fopen(input_path, "r");
         output = fopen(output_path, "w+");
         if(input == NULL)
@@ -143,39 +159,129 @@ int main(int argc, char *argv[])
 
         int maxline = 2000;
         char line[2000];
+        int ans = 0;
         if(format == 0)
         {
-
             //No translations so just reaad and write
             while(1)
             {
                 if(fgets(line, maxline, input) == NULL)
                     break;
-                printf("The line is %s\n", line);
                 fprintf(output, "%s", line);
             }
         }
         else if(format == 1)
         {
-            //change 0 to 1
-            int type = 0;
-            fscanf(input, "%d", &type);
-            printf("The type is: %d\n", type);
-            if(type == 1)
+            //Format says change all type0 to type1
+            char endline;
+            char *succes_msg = "success";
+            while(endline != EOF)
             {
-                fgets(line, maxline, input);
-                printf("The line: %s\n", line);
-                fprintf(output, "0000000%d%s", type, line);
+                int type = read_type();
+                if(type == 1)
+                {
+                    //Leaving type1 as type1
+                    fgets(line, maxline, input);
+                    fprintf(output, "0000000%d%s", type, line);
+                }
+                else if(type == 0)
+                {
+                    //Changing the type0 to type1
+                    type0_to_type1();
+                }
+                else
+                {
+                    //Wrong format wrtie error message
+                    //This closes the file and opens it again to wipe anything that was previously saved.
+                    write(conn_s, error_msg, strlen(error_msg));
+                    fclose(output);
+                    output = fopen(output_path, "w");
+                    ans = 1;
+                    break;
+                }
+                endline = fgetc(input);
             }
         }
-        /*case 2:
-            //1 change to 0
-            break;
-        case 3:
-            //Both 0 change t1 and 1 change to 0
-            break;
-        default:
-            break;
+        else if(format == 2)
+        {
+            //Format says change all type1 to type0
+            char endline;
+            char *succes_msg = "success";
+            while(endline != EOF)
+            {
+                int type = read_type();
+                if(type == 0)
+                {
+                    //Leave type0 as type0
+                    fgets(line, maxline, input);
+                    fprintf(output, "0000000%d%s", type, line);
+                }
+                else if(type == 1)
+                {
+                    //Changing type1 to type0
+                    typee1_to_type0();
+                }
+                else
+                {
+                    //Wrong format wrtie error message
+                    //This closes the file and opens it again to wipe anything that was previously saved.
+                    write(conn_s, error_msg, strlen(error_msg));
+                    fclose(output);
+                    output = fopen(output_path, "w");
+                    ans = 1;
+                    break;
+                }
+                endline = fgetc(input);
+            }
+        }
+        else if(format == 3)
+        {
+            //Format for changing both types to the other
+            char endline;
+            char *succes_msg = "success";
+            while(endline != EOF)
+            {
+                int type = read_type();
+                if(type == 0)
+                {
+                    //Changing the type0 to type1
+                    type0_to_type1();
+                }
+                else if(type == 1)
+                {
+                    //Changing type1 to type0
+                    typee1_to_type0();
+                }
+                else
+                {
+                    //Wrong format wrtie error message
+                    //This closes the file and opens it again to wipe anything that was previously saved.
+                    write(conn_s, error_msg, strlen(error_msg));
+                    fclose(output);
+                    output = fopen(output_path, "w");
+                    ans = 1;
+                    break;
+                }
+                endline = fgetc(input);
+            }
+        }
+        else
+        {
+            //Wrong format wrtie error message
+           //This closes the file and opens it again to wipe anything that was previously saved.
+            printf("This is an invalid Format!!\nError!!\n");
+            write(conn_s, error_msg, strlen(error_msg));
+            fclose(output);
+            output = fopen(output_path, "w");
+            ans = 1;
+        }
+
+        //The cofirm mesage needs to be fixed
+        /*if(ans == 0)
+        {
+            printf("I get here\n");
+            //printf("We have a success\n");
+            //write(conn_s, succes_msg, strlen(succes_msg));
         }*/
 
         fclose(input);
@@ -219,10 +325,243 @@ int ascii_to_int(int num)
     {
         int temp = num%100;
         temp = temp - 48;
-        printf("The temp is %d\n", temp);
         sum = sum + (temp*i);
         i = i*10;
         num = num/100;
     }
     return sum;
+}
+
+int binaryToDecimal(long long n)
+{
+    int decimalNumber = 0, i = 0, remainder;
+    while (n!=0)
+    {
+        remainder = n%10;
+        n /= 10;
+        decimalNumber += remainder*pow(2,i);
+        ++i;
+    }
+    return decimalNumber;
+}
+
+int int_to_ascii(int num)
+{
+    int i=1, sum =0;
+    while(num != 0)
+    {
+        int temp = num%10;
+        temp = temp + 48;
+        sum = sum + (i*temp);
+        i = i * 100;
+        num = num/10;
+    }
+    return sum;
+}
+
+int amount_ascii(int n)
+{
+    if(n<100)
+    {
+        n = n + 484800;
+    }
+    else
+    {
+        n = n + 480000;
+    }
+    return n;
+}
+
+long long decimalToBinary(int n)
+{
+    long long binaryNumber = 0;
+    int remainder, i = 1, step = 1;
+    while (n!=0)
+    {
+        remainder = n%2;
+        n /= 2;
+        binaryNumber += remainder*i;
+        i *= 10;
+    }
+    return binaryNumber;
+}
+
+void print_binary_leading_zeros(long long n, bool isAmt)
+{
+    if(n < 10)
+    {
+        if(isAmt == true)
+        {
+            fprintf(output, "0000000%lld ", n);
+        }
+        else
+        {
+            fprintf(output, "000000000000000%lld ", n);
+        }
+    }
+    else if(n < 100)
+    {
+        if(isAmt == true)
+        {
+            fprintf(output, "000000%lld ", n);
+        }
+        else
+        {
+            fprintf(output, "00000000000000%lld ", n);
+        }
+    }
+    else if(n < 1000)
+    {
+        if(isAmt == true)
+        {
+            fprintf(output, "00000%lld ", n);
+        }
+        else
+        {
+            fprintf(output, "0000000000000%lld ", n);
+        }
+    }
+    else if(n < 10000)
+    {
+        if(isAmt == true)
+        {
+            fprintf(output, "0000%lld ", n);
+        }
+        else
+        {
+            fprintf(output, "000000000000%lld ", n);
+        }
+    }
+    else if(n < 100000)
+    {
+        if(isAmt == true)
+        {
+            fprintf(output, "000%lld ", n);
+        }
+        else
+        {
+            fprintf(output, "00000000000%lld ", n);
+        }
+    }
+    else if(n < 1000000)
+    {
+        if(isAmt == true)
+        {
+            fprintf(output, "00%lld ", n);
+        }
+        else
+        {
+            fprintf(output, "0000000000%lld ", n);
+        }
+    }
+    else if(n < 10000000)
+    {
+        if(isAmt == true)
+        {
+            fprintf(output, "0%lld ", n);
+        }
+        else
+        {
+            fprintf(output, "000000000%lld ", n);
+        }
+    }
+    else if(n < 100000000)
+    {
+        if(isAmt == true)
+        {
+            fprintf(output, "%lld ", n);
+        }
+        else
+        {
+            fprintf(output, "00000000%lld ", n);
+        }
+    }
+    else if(n < 1000000000)
+    {
+        fprintf(output, "0000000%lld ", n);
+    }
+    else if(n < 10000000000)
+    {
+        fprintf(output, "000000%lld ", n);
+    }
+    else if(n < 100000000000)
+    {
+        fprintf(output, "00000%lld ", n);
+    }
+    else if(n < 1000000000000)
+    {
+        fprintf(output, "0000%lld ", n);
+    }
+    else if(n < 10000000000000)
+    {
+        fprintf(output, "000%lld ", n);
+    }
+    else if(n < 100000000000000)
+    {
+        fprintf(output, "00%lld ", n);
+    }
+    else if(n < 1000000000000000)
+    {
+        fprintf(output, "0%lld ", n);
+    }
+    else if(n < 10000000000000000)
+    {;
+        fprintf(output, "%lld ", n);
+    }
+}
+
+void type0_to_type1()
+{
+    long long amt, number;
+    int n=0;
+    fprintf(output, "00000001 ");
+    fscanf(input, "%lld", &amt);
+    n = binaryToDecimal(amt);
+    amt = int_to_ascii(n);
+    amt = amount_ascii(amt);
+    fprintf(output, "%d ", amt);
+    int i;
+    for(i=0; i<n; i++)
+    {
+        fscanf(input, "%ldd", &number);
+        number = binaryToDecimal(number);
+        number = int_to_ascii(number);
+        if(i != n-1)
+        {
+            fprintf(output, "%d, ", number);
+        }
+        else
+        {
+            fprintf(output, "%d\r\n", number);
+        }
+    }
+}
+
+void typee1_to_type0()
+{
+    fprintf(output, "00000000 ");
+    int amt;
+    fscanf(input, "%d", &amt);
+    amt = ascii_to_int(amt);
+    long long bin;
+    bin = decimalToBinary(amt);
+    print_binary_leading_zeros(bin, true);
+    int i;
+    for(i=0; i<amt; i++)
+    {
+        int number=0;
+        char comma;
+        fscanf(input, "%d%c", &number, &comma);
+        number = ascii_to_int(number);
+        bin = decimalToBinary(number);
+        print_binary_leading_zeros(bin, false);
+    }
+    fprintf(output, "\r\n");
+}
+
+int read_type()
+{
+    int type = 0;
+    fscanf(input, "%d", &type);
+    return type;
 }

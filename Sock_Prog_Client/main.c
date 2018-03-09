@@ -109,14 +109,14 @@ int main(int argc, char *argv[])
 
     //  Send string that holds the file path, format and target name.
 
-    //Writeline(conn_s, bufferr, strlen(bufferr));
     write(conn_s, bufferr, strlen(bufferr));
-    //Readline(conn_s, bufferr, MAX_LINE-1);
+    read(conn_s, bufferr, 900);
+    //read(conn_s, bufferr, Max-1);
 
 
     //  Output echoed string
 
-    printf("Echo response: %s\n", buffer);
+    printf("Echo response: %5s\n", bufferr);
 
     // Close the connected socket
 
