@@ -42,7 +42,6 @@ int main(int argc, char *argv[])
     int       conn_s;                // connection socket
     short int port;                  // port number
     struct    sockaddr_in servaddr;  // socket address structure
-    char      buffer[MAX_LINE];      // character buffer
     char      *bufferr;
     size_t    Max =1000;
     char     *endptr;                // for strtol()
@@ -101,14 +100,14 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    //This is where the real work happens
+    /// This is where the real work happens
 
-    // Enter an infinite loop to respond
-    // to client requests and echo input
+    /// Enter an infinite loop to respond
+    /// to client requests and echo input
 
     while ( 1 )
     {
-        // Wait for a connection, then accept() it  */
+        /// Wait for a connection, then accept() it
 
         if ( (conn_s = accept(list_s, NULL, NULL) ) < 0 )
         {
@@ -117,28 +116,22 @@ int main(int argc, char *argv[])
         }
 
 
-        // Retrieve an input line from the connected socket
-        // then simply write it back to the same socket.
-
+        /// Retrieve an input line from the connected socket
 
         read(conn_s, bufferr, Max-1);
 
+        /// This is the process of taking input and putting everything where it needs to go
 
-
-        // This is the process of taking input and putting everything where it needs to go
         char *response;
         response = strtok(bufferr, ",");
         input_path = response;
-        printf("The input is: %s\n", input_path);
         response = strtok(NULL, ",");
         format = atoi(response);
-        printf("The format is: %d\n", format);
         response = strtok(NULL, ",");
         output_path = response;
-        printf("The output is: %s\n\n", output_path);
 
-        //From here I have to check to seee if i can read from the file over the socket.
 
+        /// Opens the files to for reading and writing
 
         input = fopen(input_path, "r");
         output = fopen(output_path, "w+");
@@ -155,163 +148,157 @@ int main(int argc, char *argv[])
 
 
 
-        //Handle the format
+        /// Handle the format dealing with which type of transformation needs to occur
 
         int maxline = 2000;
         char line[2000];
-        int ans = 0;
+        bool isSucessful = true;
         if(format == 0)
         {
-            //No translations so just reaad and write
+            /// No translations so just reaad and write
             while(1)
             {
                 if(fgets(line, maxline, input) == NULL)
                     break;
                 fprintf(output, "%s", line);
             }
+            /// Sending the success message after making it out loop
+            /// Wont change the error message sent if error was found because their is only one read on the client end
+            /// Meaning it would only get the first message sent
+            char *succes_msg = "success";
+            write(conn_s, succes_msg, strlen(succes_msg));
         }
         else if(format == 1)
         {
-            //Format says change all type0 to type1
+            /// Format says change all type0 to type1
             char endline;
-            char *succes_msg = "success";
             while(endline != EOF)
             {
                 int type = read_type();
                 if(type == 1)
                 {
-                    //Leaving type1 as type1
+                    /// Leaving type1 as type1
                     fgets(line, maxline, input);
                     fprintf(output, "0000000%d%s", type, line);
                 }
                 else if(type == 0)
                 {
-                    //Changing the type0 to type1
+                    /// Changing type0 to type1
                     type0_to_type1();
                 }
                 else
                 {
-                    //Wrong format wrtie error message
-                    //This closes the file and opens it again to wipe anything that was previously saved.
+                    /// Wrong format wrtie error message
+                    /// This closes the file and opens it again to wipe anything that was previously saved.
                     write(conn_s, error_msg, strlen(error_msg));
                     fclose(output);
                     output = fopen(output_path, "w");
-                    ans = 1;
+                    isSucessful = false;
                     break;
                 }
                 endline = fgetc(input);
             }
+            /// Sending the success message after making it out loop
+            /// Wont change the error message sent if error was found because their is only one read on the client end
+            /// Meaning it would only get the first message sent
+            char *succes_msg = "success";
+            write(conn_s, succes_msg, strlen(succes_msg));
         }
         else if(format == 2)
         {
-            //Format says change all type1 to type0
+            /// Format says change all type1 to type0
             char endline;
-            char *succes_msg = "success";
             while(endline != EOF)
             {
                 int type = read_type();
                 if(type == 0)
                 {
-                    //Leave type0 as type0
+                    /// Leave type0 as type0
                     fgets(line, maxline, input);
                     fprintf(output, "0000000%d%s", type, line);
                 }
                 else if(type == 1)
                 {
-                    //Changing type1 to type0
+                    /// Changing type1 to type0
                     typee1_to_type0();
                 }
                 else
                 {
-                    //Wrong format wrtie error message
-                    //This closes the file and opens it again to wipe anything that was previously saved.
+                    /// Wrong format wrtie error message
+                    /// This closes the file and opens it again to wipe anything that was previously saved.
                     write(conn_s, error_msg, strlen(error_msg));
                     fclose(output);
                     output = fopen(output_path, "w");
-                    ans = 1;
+                    isSucessful = false;
                     break;
                 }
                 endline = fgetc(input);
             }
+            /// Sending the success message after making it out loop
+            /// Wont change the error message sent if error was found because their is only one read on the client end
+            /// Meaning it would only get the first message sent
+            char *succes_msg = "success";
+            write(conn_s, succes_msg, strlen(succes_msg));
         }
         else if(format == 3)
         {
-            //Format for changing both types to the other
+            /// Format for changing both types to the other
             char endline;
-            char *succes_msg = "success";
             while(endline != EOF)
             {
                 int type = read_type();
                 if(type == 0)
                 {
-                    //Changing the type0 to type1
+                    /// Changing type0 to type1
                     type0_to_type1();
                 }
                 else if(type == 1)
                 {
-                    //Changing type1 to type0
+                    /// Changing type1 to type0
                     typee1_to_type0();
                 }
                 else
                 {
-                    //Wrong format wrtie error message
-                    //This closes the file and opens it again to wipe anything that was previously saved.
+                    /// Wrong format wrtie error message
+                    /// This closes the file and opens it again to wipe anything that was previously saved.
                     write(conn_s, error_msg, strlen(error_msg));
                     fclose(output);
                     output = fopen(output_path, "w");
-                    ans = 1;
+                    isSucessful = false;
                     break;
                 }
                 endline = fgetc(input);
             }
+            /// Sending the success message after making it out loop
+            /// Wont change the error message sent if error was found because their is only one read on the client end
+            /// Meaning it would only get the first message sent
+            char *succes_msg = "success";
+            write(conn_s, succes_msg, strlen(succes_msg));
         }
         else
         {
-            //Wrong format wrtie error message
-           //This closes the file and opens it again to wipe anything that was previously saved.
-            printf("This is an invalid Format!!\nError!!\n");
+            /// Wrong format wrtie error message
+           /// This closes the file and opens it again to wipe anything that was previously saved.
             write(conn_s, error_msg, strlen(error_msg));
             fclose(output);
             output = fopen(output_path, "w");
-            ans = 1;
+            isSucessful = false;
         }
-
-        //The cofirm mesage needs to be fixed
-        /*if(ans == 0)
-        {
-            printf("I get here\n");
-            //printf("We have a success\n");
-            //write(conn_s, succes_msg, strlen(succes_msg));
-        }*/
 
         fclose(input);
         fclose(output);
 
-        /*int type = 0, n = 0;
-        fscanf(input, "%d", &type);
-        printf("The typ is: %d\n", type);
-        int test;
-        fscanf(input, "%d", &test);
-        printf("tesst %d\n", test);
-        test = ascii_to_int(test);
-        fscanf(input, "%d", &test);
-        test = ascii_to_int(test);
-
-        printf("The amount is: %d\n", test);*/
-
-        //Put code in to check filres are in correct format
-
-
-
-
-
-
-        // Close the connected socket
+        /// Close the connected socket
 
         if ( close(conn_s) < 0 )
         {
             fprintf(stderr, "ECHOSERV: Error calling close()\n");
             exit(EXIT_FAILURE);
+        }
+        else
+        {
+            /// This is to end loop as the function as my protocol only allows one request at a time.
+            break;
         }
     }
 
@@ -320,6 +307,7 @@ int main(int argc, char *argv[])
 
 int ascii_to_int(int num)
 {
+    /// This function converts ascii characters to integers
     int i = 1, sum = 0;
     while(num != 0)
     {
@@ -334,6 +322,7 @@ int ascii_to_int(int num)
 
 int binaryToDecimal(long long n)
 {
+    /// This function converts binary number to decimal
     int decimalNumber = 0, i = 0, remainder;
     while (n!=0)
     {
@@ -347,12 +336,19 @@ int binaryToDecimal(long long n)
 
 int int_to_ascii(int num)
 {
-    int i=1, sum =0;
+    /// This converts integers to ascii values
+    int sum =0;
+    unsigned long long temps = 0, i = 1;
     while(num != 0)
     {
+        /// Fix the sum type to unsigned long long
         int temp = num%10;
         temp = temp + 48;
         sum = sum + (i*temp);
+        temps = temps + (i*temp);
+        printf("The sum is %d\n", sum);
+        printf("the holder is %lld\n", temps);
+        printf("I is %llu\n", i);
         i = i * 100;
         num = num/10;
     }
@@ -361,6 +357,7 @@ int int_to_ascii(int num)
 
 int amount_ascii(int n)
 {
+    /// This functions ensure that the amount variable has has 3 bytes
     if(n<100)
     {
         n = n + 484800;
@@ -374,6 +371,7 @@ int amount_ascii(int n)
 
 long long decimalToBinary(int n)
 {
+    /// This function converts Decimal to binary numbers
     long long binaryNumber = 0;
     int remainder, i = 1, step = 1;
     while (n!=0)
@@ -388,6 +386,7 @@ long long decimalToBinary(int n)
 
 void print_binary_leading_zeros(long long n, bool isAmt)
 {
+    /// This function is responsible for putting all the leading zeros in for binary numbers
     if(n < 10)
     {
         if(isAmt == true)
@@ -512,6 +511,7 @@ void print_binary_leading_zeros(long long n, bool isAmt)
 
 void type0_to_type1()
 {
+    /// This function is used tto convert type zero units to type one
     long long amt, number;
     int n=0;
     fprintf(output, "00000001 ");
@@ -539,6 +539,7 @@ void type0_to_type1()
 
 void typee1_to_type0()
 {
+    /// This function convert type one to type zero
     fprintf(output, "00000000 ");
     int amt;
     fscanf(input, "%d", &amt);
@@ -561,6 +562,7 @@ void typee1_to_type0()
 
 int read_type()
 {
+    /// This function is used to read in the type from the units in file
     int type = 0;
     fscanf(input, "%d", &type);
     return type;

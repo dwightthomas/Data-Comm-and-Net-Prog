@@ -8,14 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 
-
-// Function declarations
-
-ssize_t Readline(int fd, void *vptr, size_t maxlen);
-ssize_t Writeline(int fc, const void *vptr, size_t maxlen);
-
 // Global constants
-#define MAX_LINE           (1000)
 #define LISTENQ        (1024)   // Backlog for listen()
 
 int main(int argc, char *argv[])
@@ -24,13 +17,12 @@ int main(int argc, char *argv[])
     int       conn_s;                // connection socket
     short int port;                  // port number
     struct    sockaddr_in servaddr;  // socket address structure
-    char      buffer[MAX_LINE];      // character buffer
-    char *bufferr;
+    char     *bufferr;
     char     *szAddress;             // Holds remote IP address
     char     *szPort;                // Holds remote port
     char     *endptr;                // for strtol()
 
-    //
+    // Variables to be pasted to server
     char *file_path;
     char *format;
     char *target;
@@ -92,109 +84,38 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // Get string to echo from user
+    // Setting data to be sent as request for the server
 
-    /*printf("Enter the string to echo: ");
-    fgets(bufferr, MAX_LINE, stdin);*/
-
-    printf("The new buffer is: %s\n", bufferr);
     strcpy(bufferr, file_path);
     strcat(bufferr, ",");
     strcat(bufferr, format);
     strcat(bufferr, ",");
     strcat(bufferr, target);
     strcat(bufferr, ",");
-    printf("\nThe new buffer now is: %s\n", bufferr);
-
 
     //  Send string that holds the file path, format and target name.
 
     write(conn_s, bufferr, strlen(bufferr));
     read(conn_s, bufferr, 900);
-    //read(conn_s, bufferr, Max-1);
-
 
     //  Output echoed string
 
-    printf("Echo response: %5s\n", bufferr);
+    if(bufferr[0] == 'e' && bufferr[1] == 'r')
+    {
+        printf("\nFormat Error.\n");
+    }
+    else if(bufferr[0] == 's' && bufferr[1] == 'u')
+    {
+        printf("\nSuccess.\n");
+    }
 
     // Close the connected socket
 
-        if ( close(conn_s) < 0 )
-        {
-            fprintf(stderr, "ECHOSERV: Error calling close()\n");
-            exit(EXIT_FAILURE);
-        }
+    if ( close(conn_s) < 0 )
+    {
+        fprintf(stderr, "ECHOSERV: Error calling close()\n");
+        exit(EXIT_FAILURE);
+    }
 
     return EXIT_SUCCESS;
 }
-
-// Read a line from a socket
-
-ssize_t Readline(int sockd, void *vptr, size_t maxlen)
-{
-    ssize_t n, rc;
-    char    c, *buffer;
-
-    buffer = vptr;
-
-    for ( n = 1; n < maxlen; n++ )
-    {
-
-        if ( (rc = read(sockd, &c, 1)) == 1 )
-        {
-            *buffer++ = c;
-            if ( c == '\n' )
-                break;
-        }
-        else if ( rc == 0 )
-        {
-            if ( n == 1 )
-                return 0;
-            else
-                break;
-        }
-        else
-        {
-            if ( errno == EINTR )
-                continue;
-            return -1;
-        }
-    }
-
-    *buffer = 0;
-    return n;
-}
-
-
-//  Write a line to a socket
-
-ssize_t Writeline(int sockd, const void *vptr, size_t n)
-{
-    size_t      nleft;
-    ssize_t     nwritten;
-    const char *buffer;
-
-    buffer = vptr;
-    nleft  = n;
-
-    while ( nleft > 0 )
-    {
-        if ( (nwritten = write(sockd, buffer, nleft)) <= 0 )
-        {
-            if ( errno == EINTR )
-                nwritten = 0;
-            else
-                return -1;
-        }
-        nleft  -= nwritten;
-        buffer += nwritten;
-    }
-
-    return n;
-}
-
-
-
-
-
