@@ -114,9 +114,13 @@ int main(int argc, char *argv[])
         response = strtok(NULL, ",");
         output_Name = response;
 
+        ///This is the Ack message for the stop and wait.
         ///This needs to be tested on Linux machine
-        ///This is the ACK
-        //msglen = lossy_sendto(loss_ratio, rseed, sock, msg, msglen, (struct sockaddr *)&cliaddr, clilen);
+        ///This is the ACK Didnt get to test it
+        char ack[2000];
+        sprintf(ack, "%s",  "ack");
+        Maxlen = strlen(msg)+1;
+        //msglen = lossy_sendto(loss_ratio, rseed, sock, ack, Maxlen, (struct sockaddr *)&cliaddr, clilen);
 
         ///Opening file
         output = fopen(output_Name, "w+");
@@ -141,21 +145,21 @@ int main(int argc, char *argv[])
                 printf("Error occured recieveing the data\n");
             }
 
+            ///This is the Ack message for the stop and wait.
+            ///This needs to be tested on Linux machine
+            ///This is the ACK Didnt get to test it
+            char ack[2000];
+            sprintf(ack, "%s",  "ack");
+            Maxlen = strlen(msg)+1;
+            //msglen = lossy_sendto(loss_ratio, rseed, sock, ack, Maxlen, (struct sockaddr *)&cliaddr, clilen);
+
+
             ///For ending loop to Finish Recieving
             if(line[0] == 'e')
             {
                 succes = 1;
                 break;
             }
-
-            ///Sending Ack for this line.
-            ///This needs to be tested on Linux machine
-            //msglen = lossy_sendto(loss_ratio, rseed, sock, msg, msglen, (struct sockaddr *)&cliaddr, clilen);
-            /*msglen = sendto(sock, line, Maxlen, 0, (struct sockaddr *)&cliaddr, clilen);
-            if(msglen < 0)
-            {
-                printf("The ack msg didnt sent properly %d\n", msglen);
-            }*/
 
 
             ///HANDLING the Date in the FILE

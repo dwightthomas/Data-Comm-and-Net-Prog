@@ -41,6 +41,8 @@ int main(int argc, char *argv[])
     char *target;
     char *loss_prob;
     char *rseed;
+    char ack[1000];
+    int acklen = 1000;
 
     // Get command line arguments
 
@@ -96,35 +98,45 @@ int main(int argc, char *argv[])
     while(1)
     {
         /// Sending the First paramenters to the Server
-        ///Stop and wait protocal being implemented.
+        ///Stop and wait protocal being implemented. (won't Run on Widnows)
         ///Needs To be done on Linux.
-        //msglen = lossy_sendto(lossR, seedR, sock, msg, 10, (struct sockaddr *)&myaddr, serlen);
 
         char msg[2000];
         sprintf(msg, "%s,%s,%s",  file_path,format,target);
         MaxMsgLen = strlen(msg)+1;
 
+        /// The line below is a label to jump back to in order to resend the last packet as there was a timeout.
+        //RESEND:
+        ///I would use this if on Linux but for functionaltiy it was commented out so I could properly test
+        //msglen = lossy_sendto(lossR, seedR, sock, msg, MaxMsgLen, (struct sockaddr *)&myaddr, serlen);
 
-        //Used this to ensure everything else was working becasue I could not test Alarms on Window machince
+        ///Used this to ensure everything else was working becasue I could not test Alarms on Window machince
         msglen = sendto(sock, msg, MaxMsgLen, 0, (struct sockaddr *)&myaddr, serlen);
-        printf("The return of sento is %d\n", msglen);
+        if(msglen < 0)
+        {
+            perror("Failed to send");
+        }
 
 
+        /// This was the part of stop and wait that would recieved acks and do time outs as well.
+        /// Could Not test on windows
         /// To Recieve Ack from Server
         ///For stop and wait will be tested on VM of linux hopefully.
-        //int test = custom_recvfrom(sock, file_path, 20, 0, (struct sockaddr *)&serStorage, &storagelen);
+
+        acklen = 1000;
+
+        //int test = custom_recvfrom(sock, ack, acklen, 0, (struct sockaddr *)&serStorage, &storagelen);
+        ///This code would take you back to resend the last bit of data due to a timeout
         /*if(test == -5)
+        {
             printf("It timedout\n");
+            goto RESEND;
+        }
         if(test == -4)
+        {
             printf("Some other error occured\n");
-        else
-            printf("The returned msg is: %s\n", msg);*/
-
-
-        /*int test = recvfrom(sock, ack, MaxMsgLen, 0, (struct sockaddr *)&serStorage, &storagelen);
-        if(test < 0 )
-            perror("Recieve error");*/
-
+            return 0;
+        }*/
 
 
 
@@ -149,27 +161,77 @@ int main(int argc, char *argv[])
                 memset(mess,0,strlen(mess));
                 sprintf(mess, "%s", end);
                 maxline = strlen(mess) + 1;
+
+                /// The line below is a label to jump back to in order to resend the last packet as there was a timeout.
+                //RESEND1:
+                ///I would use this if on Linux but for functionaltiy it was commented out so I could properly test
+                //msglen = lossy_sendto(lossR, seedR, sock, mess, maxline, (struct sockaddr *)&myaddr, serlen);
+
                 ///Used to let Server Know it is the end of File.
                 msglen = sendto(sock, mess, maxline, 0, (struct sockaddr *)&myaddr, serlen);
                 if(msglen < 0)
                     perror("Sending line");
+
+                /// This was the part of stop and wait that would recieved acks and do time outs as well.
+                /// Could Not test on windows
+                /// To Recieve Ack from Server
+                ///For stop and wait will be tested on VM of linux hopefully.
+
+                acklen = 1000;
+
+                //int test = custom_recvfrom(sock, ack, acklen, 0, (struct sockaddr *)&serStorage, &storagelen);
+                ///This code would take you back to resend the last bit of data due to a timeout
+                /*if(test == -5)
+                {
+                    printf("It timedout\n");
+                    goto RESEND1;
+                }
+                if(test == -4)
+                {
+                    printf("Some other error occured\n");
+                    return 0;
+                }*/
+
+
                 break;
             }
 
             ///Send line by line of the data in the file
             sprintf(mess, "%s",  line);
             maxline = strlen(mess) +1;
-            ///Part of Stop and wait protocal being implemented.
-            ///Needs To be done on Linux.
-            //msglen = lossy_sendto(lossR, seedR, sock, line, 10, (struct sockaddr *)&myaddr, serlen);
+
+            /// The line below is a label to jump back to in order to resend the last packet as there was a timeout.
+            //RESEND2:
+            ///I would use this if on Linux but for functionaltiy it was commented out so I could properly test
+            //msglen = lossy_sendto(lossR, seedR, sock, mess, maxline, (struct sockaddr *)&myaddr, serlen);
 
             //Used this to ensure everything else was working becasue I could not test Alarms on Window machince
             msglen = sendto(sock, mess, maxline, 0, (struct sockaddr *)&myaddr, serlen);
             if(msglen < 0)
                 perror("Sending line");
+
+            /// This was the part of stop and wait that would recieved acks and do time outs as well.
+            /// Could Not test on windows
+            /// To Recieve Ack from Server
+            ///For stop and wait will be tested on VM of linux hopefully.
+
+            //int test = custom_recvfrom(sock, ack, acklen, 0, (struct sockaddr *)&serStorage, &storagelen);
+            ///This code would take you back to resend the last bit of data due to a timeout
+            /*if(test == -5)
+            {
+                printf("It timedout\n");
+                goto RESEND2;
+            }
+            if(test == -4)
+            {
+                printf("Some other error occured\n");
+                return 0;
+            }*/
+
         }
 
         ///Handle the Last Response
+        /// I did not use the stop and wait version here because this response has to be sent without any request for it
         char ack[2000];
         MaxMsgLen = 2000;
         int test = recvfrom(sock, ack, MaxMsgLen, 0, (struct sockaddr *)&serStorage, &storagelen);
@@ -193,9 +255,8 @@ int main(int argc, char *argv[])
 
 ssize_t custom_recvfrom(int sockfd, const void *buff, size_t nbytes, int flags, struct sockaddr* from, socklen_t *fromaddrlen)
 {
-    volatile sig_atomic_t timeout = false;
-
-
+    ///This function is Used to get do the Stop and Wait
+    ///It sets an alarm to every 20 seconds that will interupt the recvfrom command that is waiting on an ACK from server
     ssize_t n;
 
     /// This for Alarms and will test inside VM hopefully.
@@ -209,38 +270,30 @@ ssize_t custom_recvfrom(int sockfd, const void *buff, size_t nbytes, int flags, 
         return 1;
     }
 
- //   signal(SIGALRM, &handle_alarm);
-    int count =0;
-    while(1)
+    // signal(SIGALRM, &handle_alarm)
+    n = recvfrom(sockfd, buff, nbytes, flags, from, fromaddrlen);
+    printf("Do I get right after the recieve line\n");
+    if (n < 0)
     {
-        alarm(5);
-        printf("count is = %d\n", count);
-        sleep(1);
-    }
-
-        /*n = recvfrom(sockfd, buff, 20, flags, NULL, NULL);
-        printf("Do I get right after the recieve line\n");
-        if (n < 0)
-        {
-            if (errno==EINTR)
-                /* timed out
-                return -5;
-            else
-            {
-                /* some other error
-                perror("The reciving on client error is");
-                return -4;
-            }
-        }
+        if (errno==EINTR)
+            /* timed out */
+            return -5;
         else
-            /* no error or time out - turn off alarm
-            alarm(0);*/
+        {
+            /* some other error */
+            perror("The reciving on client error is");
+            return -4;
+        }
+    }
+    else
+        /* no error or time out - turn off alarm */
+        alarm(0);
 
     return n;
 }
 
 void handle_alarm()
 {
-    printf("The Alarm Signal went!");
-        //return;
+    ///This is the Alarm Handler it show what will happen when an alarm signal is fired
+    return -5;
 }
